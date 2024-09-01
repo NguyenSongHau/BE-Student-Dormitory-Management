@@ -27,7 +27,7 @@ load_dotenv(".env.development.local")
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*z8fn-hg2i1+^f@^s)03e6)qw8ykr7o8@*ts8uek_bl(p@(ilk'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -54,6 +54,8 @@ INSTALLED_APPS = [
 	"drf_yasg",
 	"debug_toolbar",
 	"django_ckeditor_5",
+	# My App
+	"users.apps.UsersConfig",
 ]
 
 MIDDLEWARE = [
@@ -95,18 +97,20 @@ pymysql.install_as_MySQLdb()
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-	# "default": {
-	# 	"ENGINE": "django.db.backends.mysql",
-	# 	"NAME": "sdmdb",
-	# 	"USER": "root",
-	# 	"PASSWORD": "Admin@123",
-	# 	"HOST": "localhost",
-	# },
-	'default': {
-		'ENGINE': 'django.db.backends.sqlite3',
-		'NAME': BASE_DIR / 'db.sqlite3',
-	}
+	"default": {
+		"ENGINE": os.getenv("DB_ENGINE"),
+		"NAME": os.getenv("DB_NAME"),
+		"USER": os.getenv("DB_USER"),
+		"PASSWORD": os.getenv("DB_PASSWORD"),
+		"HOST": os.getenv("DB_HOST"),
+	},
+	# 'default': {
+	# 	'ENGINE': 'django.db.backends.sqlite3',
+	# 	'NAME': BASE_DIR / 'db.sqlite3',
+	# }
 }
+
+AUTH_USER_MODEL = "users.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -189,11 +193,20 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 cloudinary.config(
+	secure=True,
 	cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
 	api_key=os.getenv("CLOUDINARY_API_KEY"),
-	api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+	api_secret=os.getenv("CLOUDINARY_SECRET_KEY"),
 	api_proxy="http://proxy.server:3128/",
 )
+
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'no-reply@noreply.sdm.vn'
+# EMAIL_HOST_PASSWORD = 'noreply@123'
+# DEFAULT_FROM_EMAIL = 'no-reply@noreply.sdm.vn'
 
 customColorPalette = [
 	{"color": "hsl(4, 90%, 58%)", "label": "Red"},

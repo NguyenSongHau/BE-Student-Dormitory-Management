@@ -21,8 +21,10 @@ from django.urls import path, include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from rest_framework import routers
 
 from core import settings
+from users.urls import router as users_router
 
 schema_view = get_schema_view(
 	openapi.Info(
@@ -36,8 +38,12 @@ schema_view = get_schema_view(
 	permission_classes=[permissions.AllowAny, ],
 )
 
+router = routers.DefaultRouter()
+router.registry.extend(users_router.registry)
+
 urlpatterns = [
 	path('admin/', admin.site.urls),
+	path("api/v1/", include(router.urls)),
 	path("ckeditor5/", include("django_ckeditor_5.urls"), name="ck_editor_5_upload_file"),
 	path("__debug__/", include(debug_toolbar.urls)),
 	path("api/v1/o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
