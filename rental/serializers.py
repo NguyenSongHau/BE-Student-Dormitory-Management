@@ -5,9 +5,11 @@ from rental.models import Room, Bed, Post
 
 
 class RoomSerializer(BaseSerializer):
+	beds = serializers.SerializerMethodField()
+
 	class Meta:
 		model = Room
-		fields = ["id", "name", "image", "number_of_bed", "type", "created_date", "updated_date"]
+		fields = ["id", "name", "image", "number_of_bed", "type", "created_date", "updated_date", "beds"]
 
 	def to_representation(self, room):
 		data = super().to_representation(room)
@@ -26,6 +28,11 @@ class RoomSerializer(BaseSerializer):
 		room.save()
 
 		return room
+
+	def get_beds(self, room):
+		beds = room.beds.all()
+
+		return BedSerializer(beds, many=True).data
 
 
 class PostSerializer(BaseSerializer):
@@ -56,6 +63,7 @@ class BedSerializer(BaseSerializer):
 	class Meta:
 		model = Bed
 		fields = ["id", "name", "price", "image", "description", "status", "created_date", "updated_date", "room"]
+		extra_kwargs = {"room": {"write_only": True}}
 
 	def to_representation(self, bed):
 		data = super().to_representation(bed)
@@ -63,8 +71,6 @@ class BedSerializer(BaseSerializer):
 
 		if "image" in self.fields and image:
 			data["image"] = bed.image.url
-		if "room" in self.fields:
-			data["room"] = RoomSerializer(bed.room).data
 
 		return data
 

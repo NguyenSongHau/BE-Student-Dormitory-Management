@@ -2,4 +2,20 @@ from rest_framework import pagination
 
 
 class UserPagination(pagination.PageNumberPagination):
+	page_size = 20
+
+
+class RoomPaginators(pagination.PageNumberPagination):
+	page_size = 10
+
+
+class PostPaginators(pagination.PageNumberPagination):
+	page_size = 10
+
+
+class BedPaginators(pagination.PageNumberPagination):
+	page_size = 10
+
+
+class CommentPaginators(pagination.PageNumberPagination):
 	page_size = 10

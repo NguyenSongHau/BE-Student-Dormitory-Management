@@ -7,18 +7,12 @@ from users import serializers as users_serializer
 
 class CommentSerializer(BaseSerializer):
 	user = serializers.SerializerMethodField()
-	post = serializers.SerializerMethodField()
 
 	class Meta:
 		model = Comment
-		fields = ["id", "created_date", "updated_date", "content", "user", "post"]
+		fields = ["id", "content", "created_date", "updated_date", "user"]
 
-	def get_account(self, comment):
+	def get_user(self, comment):
 		serializer = users_serializer.UserSerializer(comment.user)
-
-		return serializer.data
-
-	def get_room(self, comment):
-		serializer = users_serializer.PostSerializer(comment.post)
 
 		return serializer.data
