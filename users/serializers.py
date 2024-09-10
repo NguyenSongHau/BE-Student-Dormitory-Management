@@ -9,12 +9,15 @@ from utils import validations
 
 class UserSerializer(BaseSerializer):
 	# Cho Manager
-	certificate = serializers.CharField(max_length=50, write_only=True, required=False)
+	certificate = serializers.CharField(max_length=255, write_only=True, required=False)
 	# Cho Specialist
-	degree = serializers.CharField(max_length=50, write_only=True, required=False)
+	degree = serializers.CharField(max_length=255, write_only=True, required=False)
 	# Cho Student
-	university = serializers.CharField(max_length=50, write_only=True, required=False)
-	major = serializers.CharField(max_length=50, write_only=True, required=False)
+	student_id = serializers.CharField(max_length=10, write_only=True, required=False)
+	university = serializers.CharField(max_length=255, write_only=True, required=False)
+	faculty = serializers.CharField(max_length=255, write_only=True, required=False)
+	major = serializers.CharField(max_length=255, write_only=True, required=False)
+	academic_year = serializers.IntegerField(write_only=True, required=False)
 
 	user_instance = serializers.SerializerMethodField(read_only=True)
 
@@ -22,8 +25,8 @@ class UserSerializer(BaseSerializer):
 		model = User
 		fields = [
 			"id", "role", "email", "password", "identification", "full_name", "avatar",
-			"dob", "gender", "address", "phone", "code", "date_joined", "last_login", "user_instance",
-			"certificate", "degree", "university", "major",
+			"dob", "gender", "address", "phone", "date_joined", "last_login", "user_instance",
+			"certificate", "degree", "student_id", "university", "faculty", "major", "academic_year",
 		]
 		extra_kwargs = {
 			"gender": {"read_only": True},
@@ -35,12 +38,16 @@ class UserSerializer(BaseSerializer):
 			"password": {"write_only": True},
 		}
 
-	def to_representation(self, account):
-		data = super().to_representation(account)
+	def to_representation(self, user):
+		data = super().to_representation(user)
 		avatar = data.get("avatar")
 
 		if "avatar" in self.fields and avatar:
-			data["avatar"] = account.avatar.url
+			data["avatar"] = user.avatar.url
+		if "dob" in self.fields:
+			data["dob"] = user.dob.strftime("%d-%m-%Y")
+		if "date_joined" in self.fields:
+			data["date_joined"] = user.date_joined.strftime("%d-%m-%Y %H:%M:%S")
 
 		return data
 
@@ -48,8 +55,11 @@ class UserSerializer(BaseSerializer):
 		other_field = {
 			"certificate": validated_data.pop("certificate", None),
 			"degree": validated_data.pop("degree", None),
+			"student_id": validated_data.pop("student_id", None),
 			"university": validated_data.pop("university", None),
+			"faculty": validated_data.pop("faculty", None),
 			"major": validated_data.pop("major", None),
+			"academic_year": validated_data.pop("academic_year", None),
 		}
 
 		user = User.objects.create_user(email=validated_data.pop("email"), password=validated_data.pop("password"), **validated_data)
@@ -79,43 +89,75 @@ class UserSerializer(BaseSerializer):
 		return email
 
 	def validate_password(self, password):
-		if password is None or not re.fullmatch(r"^.{6,}$", password.strip()):
-			raise serializers.ValidationError({"message": "Mật khẩu phải chứa ít nhất 6 ký tự."})
+		if password is None or not re.fullmatch(r"^.{8,}$", password.strip()):
+			raise serializers.ValidationError({"message": "Mật khẩu phải chứa ít nhất 8 ký tự."})
 
 		return password
 
 	def validate_identification(self, identification):
-		if identification is None or not re.fullmatch(r"^[0-9]{9,12}$", identification.strip()):
+		if identification is None or not re.fullmatch(r"^[0-9]{12}$", identification.strip()):
 			raise serializers.ValidationError({"message": "Số CCCD không hợp lệ."})
 
 		return identification
+
+	def validate_student_id(self, student_id):
+		if student_id is not None and not re.fullmatch(r"^[0-9]{10}$", student_id.strip()):
+			raise serializers.ValidationError({"message": "Mã số sinh viên không hợp lệ."})
+
+		return student_id
+
+	def validate(self, data):
+		role = data.get("role")
+		other_field = {
+			"certificate": data.get("certificate", None),
+			"degree": data.get("degree", None),
+			"student_id": data.get("student_id", None),
+			"university": data.get("university", None),
+			"faculty": data.get("faculty", None),
+			"major": data.get("major", None),
+			"academic_year": data.get("academic_year", None),
+		}
+
+		certificate = other_field.pop("certificate")
+		if role == User.Role.MANAGER and not certificate:
+			raise serializers.ValidationError({"message": "Vui lòng nhập chứng chỉ."})
+
+		degree = other_field.pop("degree")
+		if role == User.Role.SPECIALIST and not degree:
+			raise serializers.ValidationError({"message": "Vui lòng nhập bằng cấp."})
+
+		if role == User.Role.STUDENT and not all(other_field.values()):
+			raise serializers.ValidationError({"message": "Vui lòng nhập đầy đủ thông tin."})
+
+		return data
 
 	def create_user_instance(self, user, **other_field):
 		if user.role == User.Role.MANAGER:
 			certificate = other_field.get("certificate", None)
 
-			if not certificate:
-				raise serializers.ValidationError({"message": "Vui lòng nhập chứng chỉ."})
-
 			Manager.objects.create(user=user, certificate=certificate)
 		elif user.role == User.Role.SPECIALIST:
 			degree = other_field.get("degree", None)
 
-			if not degree:
-				raise serializers.ValidationError({"message": "Vui lòng nhập bằng cấp."})
-
 			Specialist.objects.create(user=user, degree=degree)
 		elif user.role == User.Role.STUDENT:
+			student_id = other_field.get("student_id", None)
 			university = other_field.get("university", None)
+			faculty = other_field.get("faculty", None)
 			major = other_field.get("major", None)
+			academic_year = other_field.get("academic_year", None)
 
-			if not university or not major:
-				raise serializers.ValidationError({"message": "Vui lòng nhập trường và ngành học."})
+			Student.objects.create(
+				user=user,
+				student_id=student_id,
+				university=university,
+				faculty=faculty,
+				major=major,
+				academic_year=academic_year
+			)
 
-			Student.objects.create(user=user, university=university, major=major)
 
-
-class UserUpdateSerializer(serializers.Serializer):
+class UserUpdateSerializer(BaseSerializer):
 	old_password = serializers.CharField(write_only=True, required=False)
 	new_password = serializers.CharField(write_only=True, required=False)
 	email = serializers.EmailField(required=False)
@@ -126,19 +168,25 @@ class UserUpdateSerializer(serializers.Serializer):
 	address = serializers.CharField(max_length=255, required=False)
 	phone = serializers.CharField(max_length=15, required=False)
 	# Cho Manager
-	certificate = serializers.CharField(max_length=50, required=False)
+	certificate = serializers.CharField(max_length=255, required=False)
 	# Cho Specialist
-	degree = serializers.CharField(max_length=50, required=False)
+	degree = serializers.CharField(max_length=255, required=False)
 	# Cho Student
-	university = serializers.CharField(max_length=50, required=False)
-	major = serializers.CharField(max_length=50, required=False)
+	student_id = serializers.CharField(max_length=10, required=False)
+	university = serializers.CharField(max_length=255, required=False)
+	faculty = serializers.CharField(max_length=255, required=False)
+	major = serializers.CharField(max_length=255, required=False)
+	academic_year = serializers.IntegerField(required=False)
 
 	def update(self, user, validated_data):
 		other_field = {
 			"certificate": validated_data.pop("certificate", None),
 			"degree": validated_data.pop("degree", None),
+			"student_id": validated_data.pop("student_id", None),
 			"university": validated_data.pop("university", None),
+			"faculty": validated_data.pop("faculty", None),
 			"major": validated_data.pop("major", None),
+			"academic_year": validated_data.pop("academic_year", None),
 		}
 
 		if "old_password" in validated_data and "new_password" in validated_data:
@@ -160,16 +208,22 @@ class UserUpdateSerializer(serializers.Serializer):
 		return email
 
 	def validate_new_password(self, new_password):
-		if not re.fullmatch(r"^.{6,}$", new_password.strip()):
-			raise serializers.ValidationError({"message": "Mật khẩu phải chứa ít nhất 6 ký tự."})
+		if not re.fullmatch(r"^.{8,}$", new_password.strip()):
+			raise serializers.ValidationError({"message": "Mật khẩu phải chứa ít nhất 8 ký tự."})
 
 		return new_password
 
 	def validate_identification(self, identification):
-		if not re.fullmatch(r"^[0-9]{9,12}$", identification.strip()):
+		if not re.fullmatch(r"^[0-9]{12}$", identification.strip()):
 			raise serializers.ValidationError({"message": "Số CCCD không hợp lệ."})
 
 		return identification
+
+	def validate_student_id(self, student_id):
+		if student_id is not None and not re.fullmatch(r"^[0-9]{10}$", student_id.strip()):
+			raise serializers.ValidationError({"message": "Mã số sinh viên không hợp lệ."})
+
+		return student_id
 
 	def update_user_instance(self, user, **other_field):
 		instance_name = validations.check_user_role(user)[1]
@@ -184,11 +238,17 @@ class UserUpdateSerializer(serializers.Serializer):
 
 			user_instance.degree = degree if degree else user_instance.degree
 		elif user.role == User.Role.STUDENT:
+			student_id = other_field.get("student_id", None)
 			university = other_field.get("university", None)
+			faculty = other_field.get("faculty", None)
 			major = other_field.get("major", None)
+			academic_year = other_field.get("academic_year", None)
 
+			user_instance.student_id = student_id if student_id else user_instance.student_id
 			user_instance.university = university if university else user_instance.university
+			user_instance.faculty = faculty if faculty else user_instance.faculty
 			user_instance.major = major if major else user_instance.major
+			user_instance.academic_year = academic_year if academic_year else user_instance.academic_year
 
 		user_instance.save()
 

@@ -23,7 +23,6 @@ class UserManager(BaseUserManager):
 		extra_fields.setdefault("is_superuser", True)
 		extra_fields.setdefault("full_name", "ADMINISTRATOR")
 		extra_fields.setdefault("dob", timezone.now())
-		extra_fields.setdefault("identification", uuid.uuid4())
 		extra_fields.setdefault("role", self.model.Role.ADMINISTRATOR)
 
 		from users.models import Administrator

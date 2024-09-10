@@ -17,3 +17,13 @@ class BaseSerializer(serializers.ModelSerializer):
 		if excludes:
 			for field_name in excludes:
 				self.fields.pop(field_name)
+
+	def to_representation(self, instance):
+		data = super().to_representation(instance)
+
+		if "created_date" in self.fields:
+			data["created_date"] = instance.created_date.strftime("%d-%m-%Y %H:%M:%S")
+		if "updated_date" in self.fields:
+			data["updated_date"] = instance.updated_date.strftime("%d-%m-%Y %H:%M:%S")
+
+		return data

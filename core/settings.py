@@ -15,19 +15,15 @@ from pathlib import Path
 
 import cloudinary.uploader
 import pymysql
-from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-load_dotenv(".env")
-load_dotenv(".env.development.local")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = "django-insecure-*z8fn-hg2i1+^f@^s)03e6)qw8ykr7o8@*ts8uek_bl(p@(ilk"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -56,6 +52,8 @@ INSTALLED_APPS = [
 	"django_ckeditor_5",
 	# My App
 	"users.apps.UsersConfig",
+	"interacts.apps.InteractsConfig",
+	"rental.apps.RentalConfig",
 ]
 
 MIDDLEWARE = [
@@ -98,11 +96,11 @@ pymysql.install_as_MySQLdb()
 
 DATABASES = {
 	"default": {
-		"ENGINE": os.getenv("DB_ENGINE"),
-		"NAME": os.getenv("DB_NAME"),
-		"USER": os.getenv("DB_USER"),
-		"PASSWORD": os.getenv("DB_PASSWORD"),
-		"HOST": os.getenv("DB_HOST"),
+		"ENGINE": "django.db.backends.mysql",
+		"NAME": "sdmdb",
+		"USER": "root",
+		"PASSWORD": "Admin@123",
+		"HOST": "localhost",
 	},
 	# 'default': {
 	# 	'ENGINE': 'django.db.backends.sqlite3',
@@ -148,7 +146,7 @@ STATIC_URL = "/static/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_build", "static")
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
+# STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
 
 MEDIA_URL = "/media/"
 
@@ -194,9 +192,9 @@ DEBUG_TOOLBAR_CONFIG = {
 
 cloudinary.config(
 	secure=True,
-	cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-	api_key=os.getenv("CLOUDINARY_API_KEY"),
-	api_secret=os.getenv("CLOUDINARY_SECRET_KEY"),
+	cloud_name="dfzv8bql4",
+	api_key="173667169675485",
+	api_secret="82lxJPRJ5SLVkzLvfHjib1Uk0m4",
 	api_proxy="http://proxy.server:3128/",
 )
 

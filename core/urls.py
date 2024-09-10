@@ -24,6 +24,8 @@ from rest_framework import permissions
 from rest_framework import routers
 
 from core import settings
+from interacts.urls import router as interacts_router
+from rental.urls import router as rental_router
 from users.urls import router as users_router
 
 schema_view = get_schema_view(
@@ -40,6 +42,8 @@ schema_view = get_schema_view(
 
 router = routers.DefaultRouter()
 router.registry.extend(users_router.registry)
+router.registry.extend(interacts_router.registry)
+router.registry.extend(rental_router.registry)
 
 urlpatterns = [
 	path('admin/', admin.site.urls),
