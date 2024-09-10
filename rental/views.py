@@ -3,9 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base import perms, paginators
-from rental import serializers as rental_serializers
 from interacts import serializers as interacts_serializers
-from rental.models import Room, Bed, Post
+from rental import serializers as rental_serializers
+from rental.models import Room, Bed, Post, RentalContact
 
 
 class RoomViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveDestroyAPIView):
@@ -75,8 +75,8 @@ class PostViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.Retriev
 
 			return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
+		# Method GET
 		comments = self.get_object().comments.select_related("user").order_by("-id")
-
 		paginator = paginators.CommentPaginators()
 		page = paginator.paginate_queryset(queryset=comments, request=request)
 		if page is not None:
@@ -110,10 +110,28 @@ class BedViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.Retrieve
 		return queryset
 
 	def get_permissions(self):
-		if self.action in ["list", "retrieve"]:
-			return [permissions.AllowAny()]
+		if self.action in ["create", "partial_update", "destroy"]:
+			return [perms.IsSpecialist()]
 
-		return [perms.IsSpecialist()]
+		if self.action in ["rent_bed"]:
+			return [perms.IsStudent()]
+
+		return [permissions.AllowAny()]
+
+	@action(methods=["post"], detail=True, url_path="rent")
+	def rent_bed(self, request, pk=None):
+		time_rental = request.data.get("time_rental")
+		student = request.user.student
+		bed = self.get_object()
+
+		existing_rental_contact = RentalContact.objects.filter(bed=bed, student=student).exists()
+		if existing_rental_contact:
+			return Response(data={"message": "Giường đã được thuê trước đó."}, status=status.HTTP_400_BAD_REQUEST)
+
+		rental_contact = student.rental_contacts.create(bed=bed, time_rental=time_rental)
+
+		serializer = rental_serializers.RentalContactSerializer(rental_contact)
+		return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 	def partial_update(self, request, pk=None):
 		serializer = self.serializer_class(instance=self.get_object(), data=request.data, partial=True)

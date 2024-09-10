@@ -1,3 +1,5 @@
+import uuid
+
 from cloudinary.models import CloudinaryField
 from django.db import models
 from django_ckeditor_5.fields import CKEditor5Field
@@ -65,12 +67,12 @@ class RentalContact(BaseModel):
 		SUCCESS = "SUCCESS", "Thành công"
 		FAIL = "FAIL", "Thất bại"
 
-	time_rental = models.DateTimeField(null=False, blank=False)
-	rental_term = models.CharField(max_length=255, null=False, blank=False)
+	rental_number = models.UUIDField(null=False, blank=False, unique=True, db_index=True, editable=False, default=uuid.uuid4)
+	time_rental = models.CharField(max_length=255, null=False, blank=False)
 	status = models.CharField(max_length=255, null=False, blank=False, choices=Status.choices, default=Status.PROCESSING)
 
-	room = models.OneToOneField(to=Room, null=True, blank=True, on_delete=models.SET_NULL, related_name="rental_contact")
 	bed = models.OneToOneField(to=Bed, null=True, blank=True, on_delete=models.SET_NULL, related_name="rental_contact")
+	student = models.ForeignKey(to="users.Student", null=False, blank=False, on_delete=models.CASCADE, related_name="rental_contacts")
 
 
 class BillRentalContact(BaseModel):

@@ -3,6 +3,8 @@ from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from base import perms
+from rental import serializers as rental_serializers
 from users import serializers as users_serializers
 from users.models import User
 
@@ -12,9 +14,19 @@ class UserViewSet(viewsets.ViewSet):
 	serializer_class = users_serializers.UserSerializer
 	parser_classes = [parsers.MultiPartParser, ]
 
+	def get_queryset(self):
+		queryset = self.queryset
+
+		queryset = queryset.prefetch_related("rental_contacts") if self.action.__eq__("get_all_rental_contacts") else queryset
+
+		return queryset
+
 	def get_permissions(self):
 		if self.action in ["current_user", "update_current_user"]:
 			return [permissions.IsAuthenticated()]
+
+		if self.action in ["get_all_rental_contacts"]:
+			return [perms.IsStudent()]
 
 		return [permissions.AllowAny()]
 
@@ -44,4 +56,12 @@ class UserViewSet(viewsets.ViewSet):
 		serializer.is_valid(raise_exception=True)
 		serializer.save()
 
+		return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+	@action(methods=["get"], detail=False, url_path="students/rental-contacts")
+	def get_all_rental_contacts(self, request):
+		student = request.user.student
+		rental_contacts = student.rental_contacts.all()
+
+		serializer = rental_serializers.RentalContactSerializer(rental_contacts, many=True)
 		return Response(data=serializer.data, status=status.HTTP_200_OK)

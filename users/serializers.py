@@ -41,13 +41,15 @@ class UserSerializer(BaseSerializer):
 	def to_representation(self, user):
 		data = super().to_representation(user)
 		avatar = data.get("avatar")
+		dob = data.get("dob")
+		date_joined = data.get("date_joined")
 
 		if "avatar" in self.fields and avatar:
-			data["avatar"] = user.avatar.url
-		if "dob" in self.fields:
-			data["dob"] = user.dob.strftime("%d-%m-%Y")
-		if "date_joined" in self.fields:
-			data["date_joined"] = user.date_joined.strftime("%d-%m-%Y %H:%M:%S")
+			data["avatar"] = avatar.url
+		if "dob" in self.fields and dob:
+			data["dob"] = dob.strftime("%d-%m-%Y")
+		if "date_joined" in self.fields and date_joined:
+			data["date_joined"] = date_joined.strftime("%d-%m-%Y %H:%M:%S")
 
 		return data
 
@@ -157,7 +159,7 @@ class UserSerializer(BaseSerializer):
 			)
 
 
-class UserUpdateSerializer(BaseSerializer):
+class UserUpdateSerializer(serializers.Serializer):
 	old_password = serializers.CharField(write_only=True, required=False)
 	new_password = serializers.CharField(write_only=True, required=False)
 	email = serializers.EmailField(required=False)

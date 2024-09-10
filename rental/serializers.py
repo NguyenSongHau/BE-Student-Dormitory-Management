@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from base.serializers import BaseSerializer
-from rental.models import Room, Bed, Post
+from users import serializers as user_serializers
+from rental.models import Room, Bed, Post, RentalContact
 
 
 class RoomSerializer(BaseSerializer):
@@ -16,7 +17,7 @@ class RoomSerializer(BaseSerializer):
 		image = data.get("image")
 
 		if "image" in self.fields and image:
-			data["image"] = room.image.url
+			data["image"] = image.url
 
 		return data
 
@@ -43,11 +44,12 @@ class PostSerializer(BaseSerializer):
 	def to_representation(self, post):
 		data = super().to_representation(post)
 		image = data.get("image")
+		room = data.get("room")
 
 		if "image" in self.fields and image:
-			data["image"] = post.image.url
-		if "room" in self.fields:
-			data["room"] = RoomSerializer(post.room).data
+			data["image"] = image.url
+		if "room" in self.fields and room:
+			data["room"] = RoomSerializer(room).data
 
 		return data
 
@@ -70,7 +72,7 @@ class BedSerializer(BaseSerializer):
 		image = data.get("image")
 
 		if "image" in self.fields and image:
-			data["image"] = bed.image.url
+			data["image"] = image.url
 
 		return data
 
@@ -93,3 +95,12 @@ class BedSerializer(BaseSerializer):
 				raise serializers.ValidationError({"message": f"Phòng {room.name} đã đủ {number_of_beds} giường."})
 
 		return data
+
+
+class RentalContactSerializer(BaseSerializer):
+	student = user_serializers.StudentSerializer()
+	bed = BedSerializer()
+
+	class Meta:
+		model = RentalContact
+		fields = ["id", "rental_number", "time_rental", "status", "bed", "student", "created_date", "updated_date"]
