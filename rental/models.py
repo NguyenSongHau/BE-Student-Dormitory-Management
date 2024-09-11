@@ -98,9 +98,14 @@ class ViolateNotice(BaseModel):
 
 
 class ElectricityAndWaterBills(BaseModel):
+	class Status(models.TextChoices):
+		PAID = "PAID", "Đã thanh toán"
+		UNPAID = "UNPAID", "Chưa thanh toán"
+
 	total_cubic_meters_water = models.FloatField(null=False, blank=False)
 	total_electricity = models.FloatField(null=False, blank=False)
 	total_amount = models.FloatField(null=False, blank=False)
+	status = models.CharField(max_length=255, null=False, blank=False, choices=Status.choices, default=Status.UNPAID)
 
 	room = models.ForeignKey(to=Room, null=False, blank=False, on_delete=models.CASCADE, related_name="electricity_and_water_bills")
 	manager = models.ForeignKey(to="users.Manager", null=True, blank=True, on_delete=models.SET_NULL, related_name="electricity_and_water_bills")

@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 from base.serializers import BaseSerializer
+from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice, ElectricityAndWaterBills
 from users import serializers as user_serializers
-from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice
 
 
 class RoomSerializer(BaseSerializer):
@@ -127,7 +127,7 @@ class BillRentalContactSerializer(BaseSerializer):
 		rental_contact = data.get("rental_contact")
 
 		if "specialist" in self.fields and specialist:
-			data["specialist"] = user_serializers.SpecialistSerializer(bill_rental_contact.specialist).data
+			data["specialist"] = user_serializers.UserSerializer(bill_rental_contact.specialist.user).data
 		if "rental_contact" in self.fields and rental_contact:
 			data["rental_contact"] = RentalContactSerializer(bill_rental_contact.rental_contact).data
 
@@ -137,13 +137,34 @@ class BillRentalContactSerializer(BaseSerializer):
 class ViolateNoticeSerializer(BaseSerializer):
 	class Meta:
 		model = ViolateNotice
-		fields = ["id", "violate_number", "description", "created_date", "updated_date", "room"]
+		fields = ["id", "violate_number", "description", "created_date", "updated_date", "manager", "room"]
 
 	def to_representation(self, violate_notice):
 		data = super().to_representation(violate_notice)
+		manager = data.get("manager")
 		room = data.get("room")
 
+		if "manager" in self.fields and manager:
+			data["manager"] = user_serializers.UserSerializer(violate_notice.manager.user).data
 		if "room" in self.fields and room:
 			data["room"] = RoomSerializer(violate_notice.room, excludes=["beds"]).data
+
+		return data
+
+
+class ElectricityAndWaterBillsSerializer(BaseSerializer):
+	class Meta:
+		model = ElectricityAndWaterBills
+		fields = ["id", "total_cubic_meters_water", "total_electricity", "total_amount", "status", "created_date", "updated_date", "manager", "room"]
+
+	def to_representation(self, electricity_and_water_bills):
+		data = super().to_representation(electricity_and_water_bills)
+		manager = data.get("manager")
+		room = data.get("room")
+
+		if "manager" in self.fields and manager:
+			data["manager"] = user_serializers.UserSerializer(electricity_and_water_bills.manager.user).data
+		if "room" in self.fields and room:
+			data["room"] = RoomSerializer(electricity_and_water_bills.room, excludes=["beds"]).data
 
 		return data

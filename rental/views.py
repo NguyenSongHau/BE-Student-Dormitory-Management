@@ -6,7 +6,9 @@ from rest_framework.response import Response
 from base import perms, paginators
 from interacts import serializers as interacts_serializers
 from rental import serializers as rental_serializers
-from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice
+from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice, ElectricityAndWaterBills
+from utils.constants import PRICE_OF_ELECTRICITY, PRICE_OF_WATER
+from utils.factory import to_float, update_status
 
 
 class RoomViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveDestroyAPIView):
@@ -229,11 +231,9 @@ class ViolateNoticeViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generic
 	def create(self, request, *args, **kwargs):
 		room_id = request.data.get("room_id")
 		room = get_object_or_404(queryset=Room, id=room_id)
-
 		description = request.data.get("description")
-		manager = request.user.manager
 
-		violate_notice = manager.violate_notices.create(description=description, room=room)
+		violate_notice = room.violate_notices.create(description=description, manager=request.user.manager)
 		serializer = self.serializer_class(violate_notice)
 
 		return Response(data=serializer.data, status=status.HTTP_201_CREATED)
@@ -246,11 +246,45 @@ class ViolateNoticeViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generic
 		return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-def update_status(rental_contact, new_status, message):
-	if rental_contact.status != RentalContact.Status.PROCESSING:
-		return Response(data={"message": "Hồ sơ đã được xử lý."}, status=status.HTTP_400_BAD_REQUEST)
+class ElectricityAndWaterBillsViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveAPIView):
+	queryset = ElectricityAndWaterBills.objects.select_related("room", "manager").filter(is_active=True).order_by("-id")
+	serializer_class = rental_serializers.ElectricityAndWaterBillsSerializer
+	pagination_class = paginators.ElectricityAndWaterBillsPaginators
 
-	rental_contact.status = new_status
-	rental_contact.save()
+	def get_queryset(self):
+		queryset = self.queryset
 
-	return Response(data={"message": message}, status=status.HTTP_200_OK)
+		if self.action.__eq__("list"):
+			room_id = self.request.query_params.get("room_id")
+			queryset = queryset.filter(room_id=room_id) if room_id else queryset
+
+			manager_id = self.request.query_params.get("manager_id")
+			queryset = queryset.filter(manager_id=manager_id) if manager_id else queryset
+
+		return queryset
+
+	def get_permissions(self):
+		if self.action in ["create"]:
+			return [perms.IsManager()]
+
+		return [permissions.AllowAny()]
+
+	def create(self, request, *args, **kwargs):
+		room_id = request.data.get("room_id")
+		room = get_object_or_404(queryset=Room, id=room_id)
+		electricity = request.data.get("electricity")
+		water = request.data.get("water")
+
+		electricity = to_float(electricity)
+		water = to_float(water)
+		total_amount = electricity * PRICE_OF_ELECTRICITY + water * PRICE_OF_WATER
+
+		electricity_and_water_bills = room.electricity_and_water_bills.create(
+			total_electricity=electricity,
+			total_cubic_meters_water=water,
+			total_amount=total_amount,
+			manager=request.user.manager
+		)
+		serializer = self.serializer_class(electricity_and_water_bills)
+
+		return Response(data=serializer.data, status=status.HTTP_201_CREATED)

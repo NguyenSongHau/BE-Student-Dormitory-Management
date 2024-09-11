@@ -27,3 +27,7 @@ class RentalContactPaginators(pagination.PageNumberPagination):
 
 class ViolateNoticePaginators(pagination.PageNumberPagination):
 	page_size = 10
+
+
+class ElectricityAndWaterBillsPaginators(pagination.PageNumberPagination):
+	page_size = 10
