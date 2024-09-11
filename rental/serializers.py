@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from base.serializers import BaseSerializer
 from users import serializers as user_serializers
-from rental.models import Room, Bed, Post, RentalContact
+from rental.models import Room, Bed, Post, RentalContact, BillRentalContact
 
 
 class RoomSerializer(BaseSerializer):
@@ -17,7 +17,7 @@ class RoomSerializer(BaseSerializer):
 		image = data.get("image")
 
 		if "image" in self.fields and image:
-			data["image"] = image.url
+			data["image"] = room.image.url
 
 		return data
 
@@ -47,9 +47,9 @@ class PostSerializer(BaseSerializer):
 		room = data.get("room")
 
 		if "image" in self.fields and image:
-			data["image"] = image.url
+			data["image"] = post.image.url
 		if "room" in self.fields and room:
-			data["room"] = RoomSerializer(room).data
+			data["room"] = RoomSerializer(post.room).data
 
 		return data
 
@@ -72,7 +72,7 @@ class BedSerializer(BaseSerializer):
 		image = data.get("image")
 
 		if "image" in self.fields and image:
-			data["image"] = image.url
+			data["image"] = bed.image.url
 
 		return data
 
@@ -98,9 +98,33 @@ class BedSerializer(BaseSerializer):
 
 
 class RentalContactSerializer(BaseSerializer):
-	student = user_serializers.StudentSerializer()
-	bed = BedSerializer()
-
 	class Meta:
 		model = RentalContact
-		fields = ["id", "rental_number", "time_rental", "status", "bed", "student", "created_date", "updated_date"]
+		fields = ["id", "rental_number", "time_rental", "status", "created_date", "updated_date", "bed", "student"]
+
+	def to_representation(self, rental_contact):
+		data = super().to_representation(rental_contact)
+		student = data.get("student")
+		bed = data.get("bed")
+
+		if "student" in self.fields and student:
+			data["student"] = user_serializers.StudentSerializer(rental_contact.student).data
+		if "bed" in self.fields and bed:
+			data["bed"] = BedSerializer(rental_contact.bed).data
+
+		return data
+
+
+class BillRentalContactSerializer(BaseSerializer):
+	class Meta:
+		model = BillRentalContact
+		fields = ["id", "total", "status", "created_date", "updated_date", "rental_contact"]
+
+	def to_representation(self, bill_rental_contact):
+		data = super().to_representation(bill_rental_contact)
+		rental_contact = data.get("rental_contact")
+
+		if "rental_contact" in self.fields and rental_contact:
+			data["rental_contact"] = RentalContactSerializer(bill_rental_contact.rental_contact).data
+
+		return data

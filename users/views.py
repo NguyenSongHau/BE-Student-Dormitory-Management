@@ -61,7 +61,8 @@ class UserViewSet(viewsets.ViewSet):
 	@action(methods=["get"], detail=False, url_path="students/rental-contacts")
 	def get_all_rental_contacts(self, request):
 		student = request.user.student
-		rental_contacts = student.rental_contacts.all()
+		rental_status = request.query_params.get("status")
+		rental_contacts = student.rental_contacts.filter(status=rental_status.upper()) if rental_status else student.rental_contacts.all()
 
 		serializer = rental_serializers.RentalContactSerializer(rental_contacts, many=True)
 		return Response(data=serializer.data, status=status.HTTP_200_OK)

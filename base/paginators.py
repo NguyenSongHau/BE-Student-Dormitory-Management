@@ -19,3 +19,7 @@ class BedPaginators(pagination.PageNumberPagination):
 
 class CommentPaginators(pagination.PageNumberPagination):
 	page_size = 10
+
+
+class RentalContactPaginators(pagination.PageNumberPagination):
+	page_size = 10

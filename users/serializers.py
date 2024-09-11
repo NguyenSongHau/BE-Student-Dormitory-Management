@@ -45,11 +45,11 @@ class UserSerializer(BaseSerializer):
 		date_joined = data.get("date_joined")
 
 		if "avatar" in self.fields and avatar:
-			data["avatar"] = avatar.url
+			data["avatar"] = user.avatar.url
 		if "dob" in self.fields and dob:
-			data["dob"] = dob.strftime("%d-%m-%Y")
+			data["dob"] = user.dob.strftime("%d-%m-%Y")
 		if "date_joined" in self.fields and date_joined:
-			data["date_joined"] = date_joined.strftime("%d-%m-%Y %H:%M:%S")
+			data["date_joined"] = user.date_joined.strftime("%d-%m-%Y %H:%M:%S")
 
 		return data
 
