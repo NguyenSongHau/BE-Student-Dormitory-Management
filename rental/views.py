@@ -1,11 +1,12 @@
 from rest_framework import viewsets, generics, parsers, status, permissions
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
 from base import perms, paginators
 from interacts import serializers as interacts_serializers
 from rental import serializers as rental_serializers
-from rental.models import Room, Bed, Post, RentalContact, BillRentalContact
+from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice
 
 
 class RoomViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveDestroyAPIView):
@@ -178,6 +179,7 @@ class RentalContactViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Retr
 	@action(methods=["post"], detail=True, url_path="confirm")
 	def confirm(self, request, pk=None):
 		rental_contact = self.get_object()
+		specialist = request.user.specialist
 
 		if rental_contact.status != RentalContact.Status.PROCESSING:
 			return Response(data={"message": "Hồ sơ đã được xử lý."}, status=status.HTTP_400_BAD_REQUEST)
@@ -185,7 +187,12 @@ class RentalContactViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Retr
 		rental_contact.status = RentalContact.Status.SUCCESS
 		rental_contact.save()
 
-		bill_rental_contact = BillRentalContact.objects.create(total=rental_contact.bed.price, rental_contact=rental_contact)
+		bill_rental_contact = BillRentalContact.objects.create(
+			total=rental_contact.bed.price,
+			student=rental_contact.student,
+			specialist=specialist,
+			rental_contact=rental_contact
+		)
 		serializer = rental_serializers.BillRentalContactSerializer(bill_rental_contact)
 
 		return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -194,6 +201,49 @@ class RentalContactViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Retr
 	def reject(self, request, pk=None):
 		rental_contact = self.get_object()
 		return update_status(rental_contact=rental_contact, new_status=RentalContact.Status.FAIL, message="Từ chối hồ sơ thành công.")
+
+
+class ViolateNoticeViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveDestroyAPIView):
+	queryset = ViolateNotice.objects.select_related("room", "manager").filter(is_active=True).order_by("-id")
+	serializer_class = rental_serializers.ViolateNoticeSerializer
+	pagination_class = paginators.ViolateNoticePaginators
+
+	def get_queryset(self):
+		queryset = self.queryset
+
+		if self.action.__eq__("list"):
+			room_id = self.request.query_params.get("room_id")
+			queryset = queryset.filter(room_id=room_id) if room_id else queryset
+
+			manager_id = self.request.query_params.get("manager_id")
+			queryset = queryset.filter(manager_id=manager_id) if manager_id else queryset
+
+		return queryset
+
+	def get_permissions(self):
+		if self.action in ["create", "partial_update", "destroy"]:
+			return [perms.IsManager()]
+
+		return [permissions.AllowAny()]
+
+	def create(self, request, *args, **kwargs):
+		room_id = request.data.get("room_id")
+		room = get_object_or_404(queryset=Room, id=room_id)
+
+		description = request.data.get("description")
+		manager = request.user.manager
+
+		violate_notice = manager.violate_notices.create(description=description, room=room)
+		serializer = self.serializer_class(violate_notice)
+
+		return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
+	def partial_update(self, request, pk=None):
+		serializer = self.serializer_class(instance=self.get_object(), data=request.data, partial=True)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+
+		return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 def update_status(rental_contact, new_status, message):

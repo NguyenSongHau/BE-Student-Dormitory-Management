@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from base.serializers import BaseSerializer
 from users import serializers as user_serializers
-from rental.models import Room, Bed, Post, RentalContact, BillRentalContact
+from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice
 
 
 class RoomSerializer(BaseSerializer):
@@ -118,13 +118,32 @@ class RentalContactSerializer(BaseSerializer):
 class BillRentalContactSerializer(BaseSerializer):
 	class Meta:
 		model = BillRentalContact
-		fields = ["id", "total", "status", "created_date", "updated_date", "rental_contact"]
+		fields = ["id", "bill_number", "total", "status", "created_date", "updated_date", "specialist", "rental_contact"]
 
 	def to_representation(self, bill_rental_contact):
 		data = super().to_representation(bill_rental_contact)
+		student = data.get("student")
+		specialist = data.get("specialist")
 		rental_contact = data.get("rental_contact")
 
+		if "specialist" in self.fields and specialist:
+			data["specialist"] = user_serializers.SpecialistSerializer(bill_rental_contact.specialist).data
 		if "rental_contact" in self.fields and rental_contact:
 			data["rental_contact"] = RentalContactSerializer(bill_rental_contact.rental_contact).data
+
+		return data
+
+
+class ViolateNoticeSerializer(BaseSerializer):
+	class Meta:
+		model = ViolateNotice
+		fields = ["id", "violate_number", "description", "created_date", "updated_date", "room"]
+
+	def to_representation(self, violate_notice):
+		data = super().to_representation(violate_notice)
+		room = data.get("room")
+
+		if "room" in self.fields and room:
+			data["room"] = RoomSerializer(violate_notice.room, excludes=["beds"]).data
 
 		return data

@@ -3,7 +3,7 @@ from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from base import perms
+from base import perms, paginators
 from rental import serializers as rental_serializers
 from users import serializers as users_serializers
 from users.models import User
@@ -63,6 +63,12 @@ class UserViewSet(viewsets.ViewSet):
 		student = request.user.student
 		rental_status = request.query_params.get("status")
 		rental_contacts = student.rental_contacts.filter(status=rental_status.upper()) if rental_status else student.rental_contacts.all()
+
+		paginator = paginators.RentalContactPaginators()
+		page = paginator.paginate_queryset(queryset=rental_contacts, request=request)
+		if page is not None:
+			serializer = rental_serializers.RentalContactSerializer(page, many=True)
+			return paginator.get_paginated_response(serializer.data)
 
 		serializer = rental_serializers.RentalContactSerializer(rental_contacts, many=True)
 		return Response(data=serializer.data, status=status.HTTP_200_OK)

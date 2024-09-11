@@ -80,13 +80,17 @@ class BillRentalContact(BaseModel):
 		PAID = "PAID", "Đã thanh toán"
 		UNPAID = "UNPAID", "Chưa thanh toán"
 
+	bill_number = models.UUIDField(null=False, blank=False, unique=True, db_index=True, editable=False, default=uuid.uuid4)
 	total = models.FloatField(null=False, blank=False)
 	status = models.CharField(max_length=255, null=False, blank=False, choices=Status.choices, default=Status.UNPAID)
 
+	student = models.OneToOneField(to="users.Student", null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
+	specialist = models.OneToOneField(to="users.Specialist", null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
 	rental_contact = models.OneToOneField(to=RentalContact, null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
 
 
 class ViolateNotice(BaseModel):
+	violate_number = models.UUIDField(null=False, blank=False, unique=True, db_index=True, editable=False, default=uuid.uuid4)
 	description = CKEditor5Field("Text", config_name="extends")
 
 	room = models.ForeignKey(to=Room, null=False, blank=False, on_delete=models.CASCADE, related_name="violate_notices")
