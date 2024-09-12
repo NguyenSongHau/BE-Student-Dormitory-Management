@@ -1,3 +1,5 @@
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from rest_framework import viewsets, generics, parsers, status, permissions
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -69,6 +71,12 @@ class PostViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.Retriev
 
 		return [permissions.AllowAny()]
 
+	def get_serializer_class(self):
+		if self.request.user.is_authenticated:
+			return rental_serializers.AuthenticatedPostSerializer
+
+		return self.serializer_class
+
 	@action(methods=["get", "post"], detail=True, url_path="comments")
 	def comments(self, request, pk=None):
 		if request.method.__eq__("POST"):
@@ -87,6 +95,16 @@ class PostViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.Retriev
 			return paginator.get_paginated_response(serializer.data)
 
 		serializer = interacts_serializers.CommentSerializer(comments, many=True)
+		return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+	@action(methods=["post"], detail=True, url_path="like")
+	def like_activity(self, request, pk=None):
+		like, created = self.get_object().likes.get_or_create(user=request.user)
+		if not created:
+			like.is_active = not like.is_active
+			like.save()
+
+		serializer = self.get_serializer_class()(self.get_object(), context={"request": request})
 		return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 	def partial_update(self, request, pk=None):
@@ -288,3 +306,28 @@ class ElectricityAndWaterBillsViewSet(viewsets.ViewSet, generics.ListCreateAPIVi
 		serializer = self.serializer_class(electricity_and_water_bills)
 
 		return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
+
+class StatisticsViewSet(viewsets.ViewSet):
+	permission_classes = [perms.IsSpecialist]
+
+	@action(detail=False, methods=['get'], url_path='rentals')
+	def get_successful_rentals_by_month(self, request):
+		year = request.query_params.get("year")
+		month = request.query_params.get("month")
+		rentals = RentalContact.objects.filter(status=RentalContact.Status.SUCCESS)
+
+		if year and month:
+			rentals = rentals.filter(created_date__year=year, created_date__month=month)
+
+		rentals = rentals.annotate(month=TruncMonth("created_date")).values("month").annotate(count=Count("id")).order_by("month")
+
+		formatted_rentals = []
+		for rental in rentals:
+			formatted_month = rental["month"].strftime("%d-%m-%Y")
+			formatted_rentals.append({
+				"date": formatted_month,
+				"count": rental["count"]
+			})
+
+		return Response(data=formatted_rentals, status=status.HTTP_200_OK)

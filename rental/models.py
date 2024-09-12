@@ -84,8 +84,8 @@ class BillRentalContact(BaseModel):
 	total = models.FloatField(null=False, blank=False)
 	status = models.CharField(max_length=255, null=False, blank=False, choices=Status.choices, default=Status.UNPAID)
 
-	student = models.OneToOneField(to="users.Student", null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
-	specialist = models.OneToOneField(to="users.Specialist", null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
+	student = models.ForeignKey(to="users.Student", null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
+	specialist = models.ForeignKey(to="users.Specialist", null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
 	rental_contact = models.OneToOneField(to=RentalContact, null=False, blank=False, on_delete=models.CASCADE, related_name="bill_rental_contact")
 
 

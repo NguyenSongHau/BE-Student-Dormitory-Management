@@ -10,5 +10,6 @@ router.register(prefix="posts", viewset=views.PostViewSet, basename="posts")
 router.register(prefix="rental-contacts", viewset=views.RentalContactViewSet, basename="rental-contacts")
 router.register(prefix="violate-notices", viewset=views.ViolateNoticeViewSet, basename="violate-notices")
 router.register(prefix="electricity-and-water-bills", viewset=views.ElectricityAndWaterBillsViewSet, basename="electricity-and-water-bills")
+router.register(prefix="statistics", viewset=views.StatisticsViewSet, basename="statistics")
 
 urlpatterns = [path("", include(router.urls))]

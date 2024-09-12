@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from base.serializers import BaseSerializer
+from interacts.models import Like
 from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice, ElectricityAndWaterBills
 from users import serializers as user_serializers
 
@@ -59,6 +60,24 @@ class PostSerializer(BaseSerializer):
 		post.save()
 
 		return post
+
+
+class AuthenticatedPostSerializer(PostSerializer):
+	liked = serializers.SerializerMethodField()
+
+	class Meta:
+		model = PostSerializer.Meta.model
+		fields = PostSerializer.Meta.fields + ["liked"]
+
+	def get_liked(self, post):
+		request = self.context.get("request")
+
+		try:
+			like = Like.objects.get(user=request.user, post=post)
+		except Like.DoesNotExist:
+			return False
+
+		return like.is_active
 
 
 class BedSerializer(BaseSerializer):

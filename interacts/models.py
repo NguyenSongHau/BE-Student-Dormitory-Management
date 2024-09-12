@@ -14,3 +14,8 @@ class Interaction(BaseModel):
 
 class Comment(Interaction):
 	content = CKEditor5Field("Text", config_name="extends")
+
+
+class Like(Interaction):
+	class Meta:
+		unique_together = ("user", "post")
