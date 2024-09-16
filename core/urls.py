@@ -16,13 +16,13 @@ Including another URLconf
 """
 import debug_toolbar
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import path, include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework import routers
 
+from base.admin import my_admin_site
 from core import settings
 from interacts.urls import router as interacts_router
 from rental.urls import router as rental_router
@@ -46,7 +46,7 @@ router.registry.extend(interacts_router.registry)
 router.registry.extend(rental_router.registry)
 
 urlpatterns = [
-	path('admin/', admin.site.urls),
+	path('admin/', my_admin_site.urls),
 	path("api/v1/", include(router.urls)),
 	path("ckeditor5/", include("django_ckeditor_5.urls"), name="ck_editor_5_upload_file"),
 	path("__debug__/", include(debug_toolbar.urls)),

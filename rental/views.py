@@ -9,6 +9,7 @@ from base import perms, paginators
 from interacts import serializers as interacts_serializers
 from rental import serializers as rental_serializers
 from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice, ElectricityAndWaterBills
+from users.models import User
 from utils.constants import PRICE_OF_ELECTRICITY, PRICE_OF_WATER
 from utils.factory import to_float, update_status
 
@@ -148,6 +149,12 @@ class BedViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.Retrieve
 		existing_rental_contact = RentalContact.objects.filter(bed=bed, student=student).exists()
 		if existing_rental_contact:
 			return Response(data={"message": "Giường đã được thuê trước đó."}, status=status.HTTP_400_BAD_REQUEST)
+
+		if request.user.gender == User.Gender.UNKNOWN:
+			return Response(data={"message": "Vui lòng cập nhật giới tính."}, status=status.HTTP_400_BAD_REQUEST)
+
+		if request.user.gender != bed.room.room_for:
+			return Response(data={"message": "Giường không phù hợp với giới tính của bạn."}, status=status.HTTP_400_BAD_REQUEST)
 
 		rental_contact = student.rental_contacts.create(bed=bed, time_rental=time_rental)
 

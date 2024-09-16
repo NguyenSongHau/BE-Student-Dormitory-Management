@@ -11,7 +11,7 @@ class RoomSerializer(BaseSerializer):
 
 	class Meta:
 		model = Room
-		fields = ["id", "name", "image", "number_of_bed", "type", "created_date", "updated_date", "beds"]
+		fields = ["id", "name", "image", "number_of_bed", "type", "room_for", "created_date", "updated_date", "beds"]
 
 	def to_representation(self, room):
 		data = super().to_representation(room)
@@ -38,9 +38,11 @@ class RoomSerializer(BaseSerializer):
 
 
 class PostSerializer(BaseSerializer):
+	total_likes = serializers.SerializerMethodField()
+
 	class Meta:
 		model = Post
-		fields = ["id", "name", "image", "description", "created_date", "updated_date", "room"]
+		fields = ["id", "name", "image", "description", "created_date", "updated_date", "total_likes", "room"]
 
 	def to_representation(self, post):
 		data = super().to_representation(post)
@@ -60,6 +62,9 @@ class PostSerializer(BaseSerializer):
 		post.save()
 
 		return post
+
+	def get_total_likes(self, post):
+		return post.likes.filter(is_active=True).count()
 
 
 class AuthenticatedPostSerializer(PostSerializer):

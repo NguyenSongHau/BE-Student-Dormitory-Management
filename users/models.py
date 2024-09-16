@@ -63,7 +63,7 @@ class Administrator(BaseModel):
 	user = models.OneToOneField(to=User, null=False, blank=False, on_delete=models.CASCADE, related_name="%(class)s")
 
 	def __str__(self):
-		return self.user
+		return self.user.email
 
 
 class Manager(BaseModel):
@@ -72,7 +72,7 @@ class Manager(BaseModel):
 	user = models.OneToOneField(to=User, null=False, blank=False, on_delete=models.CASCADE, related_name="%(class)s")
 
 	def __str__(self):
-		return self.user
+		return self.user.email
 
 
 class Specialist(BaseModel):
@@ -81,7 +81,7 @@ class Specialist(BaseModel):
 	user = models.OneToOneField(to=User, null=False, blank=False, on_delete=models.CASCADE, related_name="%(class)s")
 
 	def __str__(self):
-		return self.user
+		return self.user.email
 
 
 class Student(BaseModel):
@@ -94,4 +94,4 @@ class Student(BaseModel):
 	user = models.OneToOneField(to=User, null=False, blank=False, on_delete=models.CASCADE, related_name="%(class)s")
 
 	def __str__(self):
-		return self.user
+		return self.user.email

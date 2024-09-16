@@ -76,11 +76,8 @@ class UserSerializer(BaseSerializer):
 		return serializer_class(user_instance).data
 
 	def validate_role(self, role):
-		if role is None or role not in User.Role.values:
+		if role is None or role != User.Role.STUDENT:
 			raise serializers.ValidationError({"message": "Vai trò không hợp lệ."})
-
-		if role == User.Role.ADMINISTRATOR:
-			raise serializers.ValidationError({"message": "Không thể tạo tài khoản quản trị viên."})
 
 		return role
 
@@ -134,15 +131,7 @@ class UserSerializer(BaseSerializer):
 		return data
 
 	def create_user_instance(self, user, **other_field):
-		if user.role == User.Role.MANAGER:
-			certificate = other_field.get("certificate", None)
-
-			Manager.objects.create(user=user, certificate=certificate)
-		elif user.role == User.Role.SPECIALIST:
-			degree = other_field.get("degree", None)
-
-			Specialist.objects.create(user=user, degree=degree)
-		elif user.role == User.Role.STUDENT:
+		if user.role == User.Role.STUDENT:
 			student_id = other_field.get("student_id", None)
 			university = other_field.get("university", None)
 			faculty = other_field.get("faculty", None)

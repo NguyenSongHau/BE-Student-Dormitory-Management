@@ -13,10 +13,15 @@ class Room(BaseModel):
 		NORMAL = "NORMAL", "Phòng thường"
 		SERVICE = "SERVICE", "Phòng dịch vụ"
 
+	class RoomFor(models.TextChoices):
+		MALE = "M", "Nam"
+		FEMALE = "F", "Nữ"
+
 	name = models.CharField(max_length=255, null=False, blank=False)
 	image = CloudinaryField("images", null=False, blank=False)
 	number_of_bed = models.IntegerField(null=True, blank=True)
 	type = models.CharField(max_length=255, null=False, blank=False, choices=Type.choices, default=Type.NORMAL)
+	room_for = models.CharField(max_length=255, null=False, blank=False, choices=RoomFor.choices, default=RoomFor.MALE)
 
 	def __str__(self):
 		return self.name
