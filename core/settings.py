@@ -99,7 +99,7 @@ DATABASES = {
 		"ENGINE": "django.db.backends.mysql",
 		"NAME": "sdmdb",
 		"USER": "root",
-		"PASSWORD": "Admin@123",
+		"PASSWORD": "Hau270703",
 		"HOST": "localhost",
 	},
 	# 'default': {
