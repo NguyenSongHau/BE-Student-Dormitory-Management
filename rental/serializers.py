@@ -142,7 +142,7 @@ class RentalContactSerializer(BaseSerializer):
 class BillRentalContactSerializer(BaseSerializer):
 	class Meta:
 		model = BillRentalContact
-		fields = ["id", "bill_number", "total", "status", "created_date", "updated_date", "specialist", "rental_contact"]
+		fields = ["id", "bill_number", "total", "status", "created_date", "updated_date", "student", "specialist", "rental_contact"]
 
 	def to_representation(self, bill_rental_contact):
 		data = super().to_representation(bill_rental_contact)
@@ -150,6 +150,8 @@ class BillRentalContactSerializer(BaseSerializer):
 		specialist = data.get("specialist")
 		rental_contact = data.get("rental_contact")
 
+		if "student" in self.fields and student:
+			data["student"] = user_serializers.StudentSerializer(bill_rental_contact.student).data
 		if "specialist" in self.fields and specialist:
 			data["specialist"] = user_serializers.UserSerializer(bill_rental_contact.specialist.user).data
 		if "rental_contact" in self.fields and rental_contact:
