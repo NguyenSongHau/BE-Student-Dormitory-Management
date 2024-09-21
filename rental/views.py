@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from base import perms, paginators
 from interacts import serializers as interacts_serializers
 from rental import serializers as rental_serializers
-from rental.models import Room, Bed, Post, RentalContact, BillRentalContact, ViolateNotice, ElectricityAndWaterBills
+from rental.models import Room, Bed, Post, RentalContact, ViolateNotice, ElectricityAndWaterBills, BillRentalContact
 from users.models import User
 from utils.constants import PRICE_OF_ELECTRICITY, PRICE_OF_WATER
 from utils.factory import to_float, update_status
@@ -214,13 +214,7 @@ class RentalContactViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Retr
 		rental_contact.status = RentalContact.Status.SUCCESS
 		rental_contact.save()
 
-		bill_rental_contact = BillRentalContact.objects.create(
-			total=rental_contact.bed.price,
-			student=rental_contact.student,
-			specialist=specialist,
-			rental_contact=rental_contact
-		)
-		serializer = rental_serializers.BillRentalContactSerializer(bill_rental_contact)
+		serializer = self.get_serializer_class()(rental_contact)
 
 		return Response(data=serializer.data, status=status.HTTP_200_OK)
 
@@ -228,6 +222,65 @@ class RentalContactViewSet(viewsets.ViewSet, generics.ListAPIView, generics.Retr
 	def reject(self, request, pk=None):
 		rental_contact = self.get_object()
 		return update_status(rental_contact=rental_contact, new_status=RentalContact.Status.FAIL, message="Từ chối hồ sơ thành công.")
+
+
+class BillRentalContactViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveDestroyAPIView):
+	queryset = BillRentalContact.objects.select_related("student", "specialist", "rental_contact").filter(is_active=True).order_by("-id")
+	serializer_class = rental_serializers.BillRentalContactSerializer
+	pagination_class = paginators.BillRentalContactPaginators
+	permission_classes = [perms.IsSpecialist]
+
+	def get_queryset(self):
+		queryset = self.queryset
+
+		if self.action.__eq__("list"):
+			bill_number = self.request.query_params.get("bill_number")
+			queryset = queryset.filter(bill_number=bill_number) if bill_number else queryset
+
+			rental_status = self.request.query_params.get("status")
+			queryset = queryset.filter(status=rental_status.upper()) if rental_status else queryset
+
+			student_id = self.request.query_params.get("student_id")
+			queryset = queryset.filter(student_id=student_id) if student_id else queryset
+
+			specialist_id = self.request.query_params.get("specialist")
+			queryset = queryset.filter(specialist_id=specialist_id) if specialist_id else queryset
+
+			rental_contact_id = self.request.query_params.get("rental_contact")
+			queryset = queryset.filter(rental_contact_id=rental_contact_id) if rental_contact_id else queryset
+
+		return queryset
+
+	def create(self, request, *args, **kwargs):
+		rental_number = request.data.get("rental_number")
+
+		rental_contact = get_object_or_404(queryset=RentalContact, rental_number=rental_number)
+
+		if rental_contact.status != RentalContact.Status.SUCCESS:
+			return Response(data={"message": "Hồ sơ chưa được xác nhận."}, status=status.HTTP_400_BAD_REQUEST)
+
+		bill = BillRentalContact.objects.create(
+			student=rental_contact.student,
+			specialist=request.user.specialist,
+			rental_contact=rental_contact,
+			total=rental_contact.bed.price,
+		)
+
+		serializer = self.serializer_class(bill)
+
+		return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
+	def partial_update(self, request, pk=None):
+		bill = self.get_object()
+		
+		if bill.status == BillRentalContact.Status.PAID:
+			return Response(data={"message": "Hóa đơn đã được thanh toán."}, status=status.HTTP_400_BAD_REQUEST)
+
+		serializer = self.serializer_class(instance=bill, data=request.data, partial=True)
+		serializer.is_valid(raise_exception=True)
+		serializer.save()
+
+		return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class ViolateNoticeViewSet(viewsets.ViewSet, generics.ListCreateAPIView, generics.RetrieveDestroyAPIView):

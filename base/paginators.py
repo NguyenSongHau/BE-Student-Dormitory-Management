@@ -25,6 +25,10 @@ class RentalContactPaginators(pagination.PageNumberPagination):
 	page_size = 10
 
 
+class BillRentalContactPaginators(pagination.PageNumberPagination):
+	page_size = 10
+
+
 class ViolateNoticePaginators(pagination.PageNumberPagination):
 	page_size = 10
 
