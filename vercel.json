@@ -1,0 +1,38 @@
+{
+    "builds": [
+        {
+            "src": "core/wsgi.py",
+            "use": "@vercel/python",
+            "config": {
+                "maxLambdaSize": "15mb",
+                "runtime": "python3.9"
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/admin/(.*)",
+            "dest": "core/wsgi.py"
+        },
+        {
+            "src": "/api/v1/(.*)",
+            "dest": "core/wsgi.py"
+        },
+        {
+            "src": "/api/v1/o/(.*)",
+            "dest": "core/wsgi.py"
+        },
+        {
+            "src": "/swagger/(.*)",
+            "dest": "core/wsgi.py"
+        },
+        {
+            "src": "/redoc/(.*)",
+            "dest": "core/wsgi.py"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "core/wsgi.py"
+        }
+    ]
+}
