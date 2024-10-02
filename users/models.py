@@ -85,7 +85,7 @@ class Specialist(BaseModel):
 
 
 class Student(BaseModel):
-	student_id = models.CharField(max_length=10, null=False, blank=False, unique=True, db_index=True)
+	student_id = models.CharField(max_length=10, null=False, blank=False, db_index=True)
 	university = models.CharField(max_length=255, null=False, blank=False)
 	faculty = models.CharField(max_length=255, null=False, blank=False)
 	major = models.CharField(max_length=255, null=False, blank=False)
