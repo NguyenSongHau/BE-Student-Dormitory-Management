@@ -103,6 +103,9 @@ class UserSerializer(BaseSerializer):
 		if student_id is not None and not re.fullmatch(r"^[0-9]{10}$", student_id.strip()):
 			raise serializers.ValidationError({"message": "Mã số sinh viên không hợp lệ."})
 
+		if Student.objects.filter(student_id=student_id).exists():
+			raise serializers.ValidationError({"message": "Mã số sinh viên đã tồn tại."})
+
 		return student_id
 
 	def validate(self, data):
